@@ -199,7 +199,7 @@
     (function () {
       const CONFIG = {
         API_URL: "https://api-trackeamento.onrender.com",
-        DOMAINS: ["kiwify.com.br", "hotmart.com", "wiapy.com", "lowify.io", "ggcheckout.com", "localhost"],
+        DOMAINS: ["kiwify.com.br", "hotmart.com", "wiapy.com", "lowify.io", "ggcheckout.com", "netlify.app", "localhost"],
         TEST_CODE: "TEST30209",
         QUEUE_LIMIT: 50,
         RETRY_BATCH: 5
@@ -298,6 +298,7 @@
         const t = captureTouch();
 
         const payload = {
+          event_name: eventName,
           event_id: evId, session_id: sessId, fbclid, fbp, fbc,
           utm_source: up.get("utm_source"), utm_medium: up.get("utm_medium"),
           utm_campaign: up.get("utm_campaign"), utm_content: up.get("utm_content"), utm_term: up.get("utm_term"),
