@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oferta Especial</title>
+
+  <!-- Meta Pixel Code -->
+  <script>
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n;
+      n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }
+      (window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+
+    fbq('init', '1816037512405504');
+    fbq('track', 'PageView');
+  </script>
+  <!-- End Meta Pixel Code -->
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #fff;
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      font-weight: bold;
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: 40px;
+      line-height: 1.1;
+      margin: 0 0 16px;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.82);
+      margin: 0 0 24px;
+    }
+
+    .list {
+      text-align: left;
+      max-width: 460px;
+      margin: 0 auto 28px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      margin: 10px 0;
+      padding-left: 26px;
+      position: relative;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .price {
+      font-size: 38px;
+      font-weight: bold;
+      margin: 8px 0 24px;
+      color: #f8fafc;
+    }
+
+    .price span {
+      font-size: 16px;
+      opacity: 0.7;
+      font-weight: normal;
+    }
+
+    .btn {
+      display: inline-block;
+      width: 100%;
+      max-width: 360px;
+      padding: 18px 24px;
+      border: none;
+      border-radius: 14px;
+      background: #22c55e;
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+      transition: 0.25s ease;
+      box-shadow: 0 14px 30px rgba(34, 197, 94, 0.25);
+    }
+
+    .btn:hover {
+      background: #16a34a;
+      transform: translateY(-2px);
+    }
+
+    .small {
+      margin-top: 16px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .debug {
+      margin-top: 24px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.65);
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+  <section class="hero">
+    <div class="card">
+      <div class="badge">Teste de Tracking Avançado</div>
+      <h1>Oferta Especial para Validar o Fluxo</h1>
+      <p>
+        Esta é uma página de vendas fake para testar o fluxo completo:
+        visita → checkout → compra → Meta CAPI.
+      </p>
+
+      <ul class="list">
+        <li>Captura UTM, fbclid, fbp e fbc</li>
+        <li>Gera event_id automaticamente</li>
+        <li>Envia /track ao carregar</li>
+        <li>Envia /checkout ao clicar</li>
+        <li>Dispara ViewContent e InitiateCheckout no Meta</li>
+      </ul>
+
+      <div class="price">R$ 29,90 <span>pagamento único</span></div>
+
+      <a href="checkout.html" class="btn" data-checkout data-name="Oferta Especial" data-price="29.90">
+        Ir para o Checkout
+      </a>
+
+      <div class="small">
+        Abra o console do navegador para acompanhar os envios.
+      </div>
+
+      <div class="debug" id="debugBox">
+        Carregando debug...
+      </div>
+    </div>
+  </section>
+
+  <!-- Tracking Ultra Blindado v4.0 (Elite Edition) -->
+  <script>
+    (function () {
+      const CONFIG = {
+        API_URL: "http://localhost:3000",
+        DOMAINS: ["kiwify.com.br", "hotmart.com", "wiapy.com", "lowify.io", "ggcheckout.com", "localhost"],
+        TEST_CODE: "TEST76822",
+        QUEUE_LIMIT: 50,
+        RETRY_BATCH: 5
+      };
+
+      const KEY = {
+        EID: "trk_event_id", SID: "trk_session_id", FT: "trk_first_touch", LT: "trk_last_touch",
+        PTRK: "trk_page_tracked", FID: "trk_fbclid", FBC: "trk_fbc", Q: "trk_event_queue"
+      };
+
+      // --- Resilience Manager (Queue & Retry) ---
+      const Queue = {
+        get() { try { return JSON.parse(localStorage.getItem(KEY.Q) || "[]"); } catch (e) { return []; } },
+        save(q) { localStorage.setItem(KEY.Q, JSON.stringify(q.slice(-CONFIG.QUEUE_LIMIT))); },
+        push(item) { const q = this.get(); q.push(item); this.save(q); },
+        async process() {
+          if (!navigator.onLine) return;
+          let q = this.get();
+          if (!q.length) return;
+          const batch = q.splice(0, CONFIG.RETRY_BATCH);
+          for (const item of batch) {
+            try {
+              const res = await fetch(CONFIG.API_URL + "/track", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(item)
+              });
+              if (!res.ok) throw new Error();
+            } catch (e) { q.push(item); }
+          }
+          this.save(q);
+        }
+      };
+
+      // --- Helpers ---
+      const genId = (p) => p + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
+      const getC = (n) => { const m = document.cookie.match(new RegExp("(^| )" + n + "=([^;]+)")); return m ? m[2] : null; };
+      const setC = (n, v) => {
+        const s = window.location.protocol === "https:";
+        document.cookie = n + "=" + v + "; path=/; max-age=7776000; SameSite=Lax" + (s ? "; Secure" : "");
+      };
+
+      const getDeviceInfo = () => {
+        const ua = navigator.userAgent;
+        const d = /mobile|phone|android/i.test(ua) ? "mobile" : (/tablet|ipad/i.test(ua) ? "tablet" : "desktop");
+        const b = ua.match(/(chrome|firefox|safari|edg|opera)/i)?.[0] || "Unknown";
+        const os = ua.match(/(windows|macintosh|android|iphone|ipad)/i)?.[0] || "Unknown";
+        return { d, b, os };
+      };
+
+      // --- Attribution Core ---
+      const captureTouch = () => {
+        const up = new URLSearchParams(window.location.search);
+        const t = {
+          ts: new Date().toISOString(),
+          utm_source: up.get("utm_source"), utm_medium: up.get("utm_medium"),
+          utm_campaign: up.get("utm_campaign"), utm_content: up.get("utm_content"),
+          utm_term: up.get("utm_term"), fbclid: up.get("fbclid"),
+          referrer: document.referrer || null, url: window.location.href
+        };
+        const hasA = t.utm_source || t.fbclid;
+        if (!localStorage.getItem(KEY.FT) && hasA) { localStorage.setItem(KEY.FT, JSON.stringify(t)); }
+        if (hasA) { localStorage.setItem(KEY.LT, JSON.stringify(t)); }
+        return { f: JSON.parse(localStorage.getItem(KEY.FT) || "null"), l: JSON.parse(localStorage.getItem(KEY.LT) || "null") };
+      };
+
+      // --- Tracking Engine ---
+      async function track(eventName) {
+        if (CONFIG.PAGE_TRACKED === window.location.href && eventName === "PageView") return;
+        CONFIG.PAGE_TRACKED = window.location.href;
+
+        // Persistência Absoluta de ID por URL para evitar duplicados (Platinum v4.4)
+        const pageKey = "trk_ev_" + btoa(window.location.href).substring(0, 16);
+        let evId = sessionStorage.getItem(pageKey);
+        
+        if (!evId) {
+           evId = genId("evt");
+           sessionStorage.setItem(pageKey, evId);
+        }
+
+        localStorage.setItem(KEY.EID, evId);
+        
+        let sessId = localStorage.getItem(KEY.SID);
+        if (!sessId) {
+            sessId = genId("sess");
+            localStorage.setItem(KEY.SID, sessId);
+        }
+
+        const up = new URLSearchParams(window.location.search);
+        const fbclid = up.get("fbclid") || localStorage.getItem(KEY.FID);
+        let fbp = getC("_fbp");
+        if (!fbp) { fbp = "fb.1." + Date.now() + "." + Math.floor(Math.random() * 1e10); setC("_fbp", fbp); }
+        let fbc = fbclid ? "fb.1." + Date.now() + "." + fbclid : getC("_fbc");
+        if (fbclid) { localStorage.setItem(KEY.FID, fbclid); setC("_fbc", fbc); }
+
+        const info = getDeviceInfo();
+        const t = captureTouch();
+
+        const payload = {
+          event_id: evId, session_id: sessId, fbclid, fbp, fbc,
+          utm_source: up.get("utm_source"), utm_medium: up.get("utm_medium"),
+          utm_campaign: up.get("utm_campaign"), utm_content: up.get("utm_content"), utm_term: up.get("utm_term"),
+          page_url: window.location.href, referrer: document.referrer || null,
+          device: info.d, browser: info.b, os: info.os,
+          screen: window.screen.width + "x" + window.screen.height,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          first_touch: t.f, last_touch: t.l
+        };
+
+        if (window.fbq) {
+          const fbOpts = { eventID: evId };
+          if (eventName === "PageView") fbq("track", "PageView", {}, fbOpts);
+          else fbq("track", "ViewContent", { content_name: document.title }, fbOpts);
+        }
+
+        try {
+          const res = await fetch(CONFIG.API_URL + "/track", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error();
+        } catch (e) {
+          Queue.push(payload);
+        }
+      }
+
+      // --- Link Injection (Mutation Observer) ---
+      function inject() {
+        const evId = localStorage.getItem(KEY.EID);
+        if (!evId) return;
+        const up = new URLSearchParams(window.location.search);
+        document.querySelectorAll("a[href]").forEach(a => {
+          try {
+            const u = new URL(a.href, window.location.origin);
+            const host = u.hostname;
+            if (CONFIG.DOMAINS.some(d => host.includes(d)) || host === "localhost" || host === "127.0.0.1") {
+              // Ajuste de Plataforma: Hotmart usa 'sck', demais usam 'src'
+              const paramName = (host.includes("hotmart.com")) ? "sck" : "src";
+              u.searchParams.set(paramName, evId);
+
+              ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(p => {
+                if (up.get(p)) u.searchParams.set(p, up.get(p));
+              });
+              a.href = u.toString();
+            }
+          } catch (e) { }
+        });
+      }
+
+      // --- Checkout Strategy (Beacon) ---
+      async function fireCheckout(a) {
+        const evId = localStorage.getItem(KEY.EID);
+        if (!evId) return;
+
+        // Detecta o provedor baseado no link (ex: kiwify.com.br -> kiwify)
+        const host = new URL(a.href).hostname;
+        const provider = CONFIG.DOMAINS.find(d => host.includes(d))?.split('.')[0] || "generic";
+
+        if (window.fbq) fbq("track", "InitiateCheckout", { content_name: document.title }, { eventID: evId });
+
+        const payload = JSON.stringify({ 
+          event_id: evId, 
+          checkout_url: a.href, 
+          checkout_provider: provider,
+          ts: Date.now() 
+        });
+
+        if (navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: 'application/json' });
+          navigator.sendBeacon(CONFIG.API_URL + "/checkout", blob);
+        } else {
+          fetch(CONFIG.API_URL + "/checkout", { method: "POST", body: payload, keepalive: true, headers: { "Content-Type": "application/json" } }).catch(() => { });
+        }
+      }
+
+      // --- Observers & Hooks ---
+      const debouncedInject = (() => {
+        let t; return () => { clearTimeout(t); t = setTimeout(inject, 500); };
+      })();
+      const obs = new MutationObserver(debouncedInject);
+      obs.observe(document.body, { childList: true, subtree: true });
+
+      document.addEventListener("click", (e) => {
+        const a = e.target.closest("a[href]");
+        if (a && CONFIG.DOMAINS.some(d => a.href.includes(d))) {
+          // Bloqueia a navegação instantânea para dar tempo ao rastro (v4.18.1)
+          e.preventDefault();
+          const targetUrl = a.href;
+
+          fireCheckout(a);
+          inject();
+
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 500);
+        }
+      });
+
+      // --- Startup ---
+      const init = () => { track("ViewContent"); inject(); Queue.process(); };
+      if (document.readyState === "complete") init();
+      else window.addEventListener("load", init);
+
+      // --- SPA Support ---
+      const wrap = (type) => {
+        const orig = history[type];
+        return function () {
+          const res = orig.apply(this, arguments);
+          track("PageView");
+          inject();
+          return res;
+        };
+      };
+      history.pushState = wrap("pushState");
+      history.replaceState = wrap("replaceState");
+      window.addEventListener("popstate", () => { track("PageView"); inject(); });
+      window.addEventListener("online", () => Queue.process());
+
+    })();
+  </script>
+</body>
+
+</html>

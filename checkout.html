@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout de Teste</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #111827, #1f2937);
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 34px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    }
+
+    h1 {
+      font-size: 30px;
+      margin: 0 0 10px;
+      text-align: center;
+    }
+
+    p {
+      text-align: center;
+      color: rgba(255,255,255,0.78);
+      margin-bottom: 24px;
+    }
+
+    .box {
+      background: rgba(255,255,255,0.04);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 10px 0;
+      font-size: 15px;
+    }
+
+    .label { opacity: 0.7; }
+    .value { font-weight: bold; }
+
+    .btn {
+      width: 100%;
+      padding: 18px 24px;
+      border: none;
+      border-radius: 14px;
+      background: #22c55e;
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.25s ease;
+      box-shadow: 0 14px 30px rgba(34,197,94,0.25);
+    }
+
+    .btn:hover {
+      background: #16a34a;
+      transform: translateY(-2px);
+    }
+
+    .status {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 14px;
+      color: #86efac;
+      min-height: 20px;
+    }
+
+    .debug {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Checkout de Teste</h1>
+      <p>Simulação de checkout para validar o webhook de compra.</p>
+
+      <div class="box">
+        <div class="row">
+          <span class="label">Produto</span>
+          <span class="value">Produto Teste</span>
+        </div>
+        <div class="row">
+          <span class="label">Oferta</span>
+          <span class="value">Oferta Principal</span>
+        </div>
+        <div class="row">
+          <span class="label">Valor</span>
+          <span class="value">R$ 29,90</span>
+        </div>
+      </div>
+
+      <button class="btn" id="btnFinalizar">
+        Finalizar Compra
+      </button>
+
+      <div class="status" id="statusBox"></div>
+
+      <div class="debug" id="debugBox">
+        Carregando dados do checkout...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const API_URL = "http://localhost:3000";
+
+      function getEventId() {
+        return localStorage.getItem("trk_event_id");
+      }
+
+      function randomTransactionId() {
+        return "txn_" + Date.now();
+      }
+
+      function setStatus(msg, isError = false) {
+        const box = document.getElementById("statusBox");
+        box.style.color = isError ? "#fca5a5" : "#86efac";
+        box.textContent = msg;
+      }
+
+      function renderDebug() {
+        const eventId = getEventId();
+        document.getElementById("debugBox").innerHTML = `
+          <strong>event_id:</strong> ${eventId || "-"}<br>
+          <strong>provider:</strong> fake_checkout<br>
+          <strong>transaction_id:</strong> gerado no clique
+        `;
+      }
+
+      async function sendWebhookPurchase() {
+        const event_id = getEventId();
+
+        if (!event_id) {
+          setStatus("event_id não encontrado. Volte para a página inicial.", true);
+          return;
+        }
+
+        const payload = {
+          provider: "fake_checkout",
+          event_id,
+          transaction_id: randomTransactionId(),
+          status: "approved",
+          value: 29.90,
+          currency: "BRL",
+          buyer_name: "Cliente Teste",
+          buyer_email: "teste@email.com",
+          buyer_phone: "11999999999",
+          product_id: "produto_teste",
+          product_name: "Produto Teste",
+          offer_id: "oferta_teste",
+          offer_name: "Oferta Principal",
+          buyer_country: "BR",
+          buyer_state: "RJ",
+          buyer_city: "Barra Mansa"
+        };
+
+        try {
+          const res = await fetch(API_URL + "/webhook", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+          console.log("[webhook] resposta", data);
+
+          if (!res.ok) {
+            throw new Error(data.error || "Erro ao finalizar compra");
+          }
+
+          setStatus("Compra simulada com sucesso. Webhook enviado.");
+        } catch (err) {
+          console.error("[webhook] erro", err);
+          setStatus("Erro ao enviar webhook de compra.", true);
+        }
+      }
+
+      document.getElementById("btnFinalizar").addEventListener("click", sendWebhookPurchase);
+
+      renderDebug();
+    })();
+  </script>
+</body>
+</html>
