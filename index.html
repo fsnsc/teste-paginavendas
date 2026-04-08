@@ -19,6 +19,7 @@ s.parentNode.insertBefore(t,s)}
 (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
 
 fbq('init', '1816037512405504');
+fbq('set', 'autoConfig', false, '1816037512405504');
 </script>
 <!-- End Meta Pixel Code -->
 
@@ -193,6 +194,9 @@ fbq('init', '1816037512405504');
   <!-- Tracking Ultra Blindado v4.0 (Elite Edition) -->
 <script>
 (function () {
+  if (window.__TRK_LOADED__) return;
+  window.__TRK_LOADED__ = true;
+
   const CONFIG = {
     API_URL: "https://api-trackeamento.onrender.com",
     DOMAINS: ["kiwify.com.br", "hotmart.com", "wiapy.com", "lowify.io", "ggcheckout.com", "netlify.app", "localhost"],
@@ -200,6 +204,8 @@ fbq('init', '1816037512405504');
     QUEUE_LIMIT: 50,
     RETRY_BATCH: 5
   };
+
+  const CACHE = {}; // Trava de duplicidade
 
   const KEY = {
     EID: "trk_event_id", SID: "trk_session_id", FT: "trk_first_touch", LT: "trk_last_touch",
@@ -259,8 +265,16 @@ fbq('init', '1816037512405504');
   };
 
   async function track(eventName) {
+    const now = Date.now();
+    const cacheKey = eventName + ":" + window.location.href;
+    if (CACHE[cacheKey] && now - CACHE[cacheKey] < 1000) return;
+    CACHE[cacheKey] = now;
+
     if (CONFIG.PAGE_TRACKED === window.location.href && eventName === "PageView") return;
-    if (eventName === "PageView") CONFIG.PAGE_TRACKED = window.location.href;
+    if (eventName === "PageView") {
+      CONFIG.PAGE_TRACKED = window.location.href;
+      if (window.fbq) fbq("set", "autoConfig", false, "1816037512405504"); 
+    }
 
     const pageKey = "trk_ev_" + btoa(window.location.href).substring(0, 16);
     let evId = sessionStorage.getItem(pageKey);
@@ -343,7 +357,13 @@ fbq('init', '1816037512405504');
     if (!evId) return;
     if (window.fbq) fbq("track", "InitiateCheckout", { content_name: document.title }, { eventID: evId });
     
-    const payload = JSON.stringify({ event_id: evId, checkout_url: a.href, ts: Date.now() });
+    const payload = JSON.stringify({ 
+      event_id: evId, 
+      checkout_provider: "generic",
+      checkout_url: a.href, 
+      test_event_code: CONFIG.TEST_CODE || null,
+      ts: Date.now() 
+    });
     if (navigator.sendBeacon) {
       navigator.sendBeacon(CONFIG.API_URL + "/checkout", payload);
     } else {
@@ -367,9 +387,14 @@ fbq('init', '1816037512405504');
     }
   });
 
-  const init = () => { 
-    track("PageView"); 
-    track("ViewContent"); 
+  let initialized = false;
+  const init = async () => { 
+    if (initialized) return;
+    initialized = true;
+
+    await track("PageView"); 
+    setTimeout(() => track("ViewContent"), 400); 
+    
     inject(); 
     Queue.process(); 
   };
