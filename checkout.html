@@ -4,6 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Checkout de Teste</title>
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}
+    (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+    fbq('init', '1816037512405504');
+    fbq('set', 'autoConfig', false, '1816037512405504');
+  </script>
+  <!-- End Meta Pixel Code -->
   <style>
     * { box-sizing: border-box; }
 
@@ -138,9 +154,32 @@
   <script>
     (function () {
       const API_URL = "https://api-trackeamento.onrender.com";
+      const TEST_EVENT_CODE = "TEST10962";
+      const KEY = {
+        SESSION_ID: "trk_session_id",
+        LAST_PURCHASE_EVENT_ID: "trk_last_purchase_event_id"
+      };
 
-      function getEventId() {
-        return localStorage.getItem("trk_event_id");
+      function getQueryParam(name) {
+        const url = new URL(window.location.href);
+        return url.searchParams.get(name);
+      }
+
+      function getCookie(name) {
+        const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+        return match ? match[2] : null;
+      }
+
+      function createEventId(prefix) {
+        return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+      }
+
+      function getSourceEventId() {
+        return getQueryParam("source_event_id") || localStorage.getItem("trk_last_source_event_id") || localStorage.getItem("trk_event_id_PageView") || null;
+      }
+
+      function getCheckoutEventId() {
+        return getQueryParam("checkout_event_id") || getQueryParam("src") || getQueryParam("sck") || localStorage.getItem("trk_last_checkout_event_id") || localStorage.getItem("trk_event_id_InitiateCheckout") || null;
       }
 
       function randomTransactionId() {
@@ -153,27 +192,76 @@
         box.textContent = msg;
       }
 
-      function renderDebug() {
-        const eventId = getEventId();
+      function renderDebug(extra = {}) {
+        const sourceEventId = getSourceEventId();
+        const checkoutEventId = getCheckoutEventId();
         document.getElementById("debugBox").innerHTML = `
-          <strong>event_id:</strong> ${eventId || "-"}<br>
+          <strong>source_event_id:</strong> ${sourceEventId || "-"}<br>
+          <strong>checkout_event_id:</strong> ${checkoutEventId || "-"}<br>
+          <strong>purchase_event_id:</strong> ${extra.purchaseEventId || localStorage.getItem(KEY.LAST_PURCHASE_EVENT_ID) || "-"}<br>
           <strong>provider:</strong> fake_checkout<br>
-          <strong>transaction_id:</strong> gerado no clique
+          <strong>transaction_id:</strong> ${extra.transactionId || "gerado no clique"}
         `;
       }
 
-      async function sendWebhookPurchase() {
-        const event_id = getEventId();
+      async function sendTrackEvent(eventName, eventId, customData) {
+        const payload = {
+          event_name: eventName,
+          event_id: eventId,
+          session_id: localStorage.getItem(KEY.SESSION_ID) || null,
+          fbp: getCookie("_fbp") || null,
+          fbc: getCookie("_fbc") || null,
+          page_url: window.location.href,
+          referrer: document.referrer || null,
+          user_agent: navigator.userAgent,
+          screen: window.screen.width + "x" + window.screen.height,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          test_event_code: TEST_EVENT_CODE,
+          ...customData
+        };
 
-        if (!event_id) {
-          setStatus("event_id não encontrado. Volte para a página inicial.", true);
+        try {
+          await fetch(API_URL + "/track", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true
+          });
+        } catch (err) {
+          console.warn("[checkout-track] falha ao enviar", eventName, err);
+        }
+      }
+
+      async function registerCheckoutLanding() {
+        const pageViewId = createEventId("CheckoutPageView");
+        const viewContentId = createEventId("CheckoutViewContent");
+
+        if (window.fbq) {
+          fbq("track", "PageView", {}, { eventID: pageViewId });
+          fbq("track", "ViewContent", { content_name: document.title }, { eventID: viewContentId });
+        }
+
+        await sendTrackEvent("PageView", pageViewId);
+        await sendTrackEvent("ViewContent", viewContentId, { content_name: document.title });
+      }
+
+      async function sendWebhookPurchase() {
+        const source_event_id = getSourceEventId();
+        const checkout_event_id = getCheckoutEventId();
+
+        if (!source_event_id && !checkout_event_id) {
+          setStatus("IDs de origem não encontrados. Volte para a página inicial e refaça o fluxo.", true);
           return;
         }
 
+        const transaction_id = randomTransactionId();
+        const purchase_event_id = "Purchase_" + transaction_id;
         const payload = {
           provider: "fake_checkout",
-          event_id,
-          transaction_id: randomTransactionId(),
+          source_event_id: source_event_id || null,
+          checkout_event_id: checkout_event_id || null,
+          purchase_event_id,
+          transaction_id,
           status: "approved",
           value: 29.90,
           currency: "BRL",
@@ -186,7 +274,9 @@
           offer_name: "Oferta Principal",
           buyer_country: "BR",
           buyer_state: "RJ",
-          buyer_city: "Barra Mansa"
+          buyer_city: "Barra Mansa",
+          is_test: true,
+          test_event_code: TEST_EVENT_CODE
         };
 
         try {
@@ -201,11 +291,21 @@
           const data = await res.json();
           console.log("[webhook] resposta", data);
 
-          if (!res.ok) {
+          if (!res.ok || data.success === false) {
             throw new Error(data.error || "Erro ao finalizar compra");
           }
 
-          setStatus("Compra simulada com sucesso. Webhook enviado.");
+          localStorage.setItem(KEY.LAST_PURCHASE_EVENT_ID, purchase_event_id);
+          if (window.fbq) {
+            fbq("track", "Purchase", {
+              value: 29.90,
+              currency: "BRL",
+              content_name: "Produto Teste"
+            }, { eventID: purchase_event_id });
+          }
+
+          setStatus("Compra simulada com sucesso. Webhook enviado com deduplicação de Purchase.");
+          renderDebug({ transactionId: transaction_id, purchaseEventId: purchase_event_id });
         } catch (err) {
           console.error("[webhook] erro", err);
           setStatus("Erro ao enviar webhook de compra.", true);
@@ -214,6 +314,7 @@
 
       document.getElementById("btnFinalizar").addEventListener("click", sendWebhookPurchase);
 
+      registerCheckoutLanding();
       renderDebug();
     })();
   </script>
