@@ -159,6 +159,7 @@
         SESSION_ID: "trk_session_id",
         LAST_PURCHASE_EVENT_ID: "trk_last_purchase_event_id"
       };
+      const PIXEL_ID = "1816037512405504";
 
       function getQueryParam(name) {
         const url = new URL(window.location.href);
@@ -200,7 +201,8 @@
           <strong>checkout_event_id:</strong> ${checkoutEventId || "-"}<br>
           <strong>purchase_event_id:</strong> ${extra.purchaseEventId || localStorage.getItem(KEY.LAST_PURCHASE_EVENT_ID) || "-"}<br>
           <strong>provider:</strong> fake_checkout<br>
-          <strong>transaction_id:</strong> ${extra.transactionId || "gerado no clique"}
+          <strong>transaction_id:</strong> ${extra.transactionId || "gerado no clique"}<br>
+          <strong>webhook/meta:</strong> ${extra.webhookResponse || "aguardando clique"}
         `;
       }
 
@@ -216,6 +218,9 @@
           user_agent: navigator.userAgent,
           screen: window.screen.width + "x" + window.screen.height,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          page_url: window.location.href,
+          fbp: getCookie("_fbp") || null,
+          fbc: getCookie("_fbc") || null,
           test_event_code: TEST_EVENT_CODE,
           ...customData
         };
@@ -283,11 +288,15 @@
           buyer_phone: "11999999999",
           product_id: "produto_teste",
           product_name: "Produto Teste",
+          product_id: "produto_teste_01",
           offer_id: "oferta_teste",
           offer_name: "Oferta Principal",
           buyer_country: "BR",
           buyer_state: "RJ",
           buyer_city: "Barra Mansa",
+          page_url: window.location.href,
+          fbp: getCookie("_fbp") || null,
+          fbc: getCookie("_fbc") || null,
           is_test: true,
           test_event_code: TEST_EVENT_CODE
         };
@@ -297,11 +306,15 @@
 
         try {
           if (window.fbq) {
-            fbq("track", "Purchase", {
-              value: 29.90,
-              currency: "BRL",
-              content_name: "Produto Teste"
-            }, { eventID: purchase_event_id });
+            if (typeof fbq === "function") {
+              fbq("trackSingle", PIXEL_ID, "Purchase", {
+                value: 29.90,
+                currency: "BRL",
+                content_name: "Produto Teste",
+                content_ids: ["produto_teste_01"],
+                content_type: "product"
+              }, { eventID: purchase_event_id });
+            }
           }
         } catch (err) {
           console.warn("[purchase-pixel] falha ao disparar Purchase no navegador", err);
@@ -326,6 +339,7 @@
           }
 
           console.log("[webhook] status", res.status, "resposta", data);
+          renderDebug({ transactionId: transaction_id, purchaseEventId: purchase_event_id, webhookResponse: JSON.stringify(data) });
 
           if (!res.ok || (data && data.success === false)) {
             throw new Error((data && data.error) || "Erro ao finalizar compra");
