@@ -209,7 +209,9 @@ fbq('set', 'autoConfig', false, '1816037512405504');
 
   const KEY = {
     EID: "trk_event_id", SID: "trk_session_id", FT: "trk_first_touch", LT: "trk_last_touch",
-    PTRK: "trk_page_tracked", FID: "trk_fbclid", FBC: "trk_fbc", Q: "trk_event_queue"
+    PTRK: "trk_page_tracked", FID: "trk_fbclid", FBC: "trk_fbc", Q: "trk_event_queue",
+    LAST_CHECKOUT_EVENT_ID: "trk_last_checkout_event_id",
+    LAST_SOURCE_EVENT_ID: "trk_last_source_event_id"
   };
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -294,6 +296,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
       : createEventId(eventName);
       
     localStorage.setItem("trk_event_id_" + eventName, evId);
+    localStorage.setItem(KEY.EID, evId);
     
     let sessId = localStorage.getItem(KEY.SID);
     if (!sessId) {
@@ -343,24 +346,52 @@ fbq('set', 'autoConfig', false, '1816037512405504');
 
   async function fireCheckout(a) {
     const evId = createEventId("InitiateCheckout");
+    const sourceEventId = localStorage.getItem("trk_event_id_PageView");
+    const up = new URLSearchParams(window.location.search);
+    const fbclid = up.get("fbclid") || localStorage.getItem(KEY.FID) || null;
+    const fbp = getC("_fbp") || null;
+    const fbc = getC("_fbc") || null;
+
     localStorage.setItem("trk_event_id_InitiateCheckout", evId);
-    if (window.fbq) fbq("track", "InitiateCheckout", { content_name: document.title }, { eventID: evId });
+    localStorage.setItem(KEY.EID, evId);
+    localStorage.setItem(KEY.LAST_CHECKOUT_EVENT_ID, evId);
+    if (sourceEventId) localStorage.setItem(KEY.LAST_SOURCE_EVENT_ID, sourceEventId);
+
+    if (window.fbq) {
+      fbq("track", "InitiateCheckout", {
+        content_name: a.dataset.name || document.title,
+        value: Number(a.dataset.price || 0),
+        currency: "BRL"
+      }, { eventID: evId });
+    }
     
     const payload = JSON.stringify({ 
       event_name: "InitiateCheckout",
-      event_id: evId, 
-      source_event_id: localStorage.getItem("trk_event_id_PageView"),
+      event_id: evId,
+      source_event_id: sourceEventId,
       checkout_provider: "generic",
-      checkout_url: a.href, 
+      checkout_url: a.href,
+      product_name: a.dataset.name || document.title,
+      amount_expected: Number(a.dataset.price || 0),
+      currency: "BRL",
+      session_id: localStorage.getItem(KEY.SID) || null,
+      fbclid,
+      fbp,
+      fbc,
+      utm_source: up.get("utm_source"),
+      utm_medium: up.get("utm_medium"),
+      utm_campaign: up.get("utm_campaign"),
+      utm_content: up.get("utm_content"),
+      utm_term: up.get("utm_term"),
       test_event_code: CONFIG.TEST_CODE || null,
-      ts: Date.now() 
+      ts: Date.now()
     });
 
     try {
       await fetch(CONFIG.API_URL + "/checkout", { 
         method: "POST", 
         headers: { "Content-Type": "application/json" },
-        body: payload, 
+        body: payload,
         keepalive: true 
       });
     } catch (e) {
@@ -384,7 +415,10 @@ fbq('set', 'autoConfig', false, '1816037512405504');
       const u = new URL(a.href, window.location.href);
       const host = u.hostname || window.location.hostname;
       const paramName = host.includes("hotmart.com") ? "sck" : "src";
+      const sourceEventId = localStorage.getItem("trk_event_id_PageView");
       u.searchParams.set(paramName, checkoutId);
+      u.searchParams.set("checkout_event_id", checkoutId);
+      if (sourceEventId) u.searchParams.set("source_event_id", sourceEventId);
       
       const up = new URLSearchParams(window.location.search);
       ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(p => {
