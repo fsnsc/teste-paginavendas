@@ -191,13 +191,13 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     </div>
   </section>
 
-<!-- Tracking Ultra Blindado v4.4 (Anti-Duplicidade) -->
+<!-- Tracking Ultra-Blindagem v5.1 (Recuperação Total) -->
 <script>
 (function () {
   if (window.__TRK_LOADED__) return;
   window.__TRK_LOADED__ = true;
 
-  const TRK_SENT = {}; // Trava de memória por execução
+  const TRK_SENT = {}; 
 
   const CONFIG = {
     API_URL: "https://api-trackeamento.onrender.com",
@@ -212,7 +212,6 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     PTRK: "trk_page_tracked", FID: "trk_fbclid", FBC: "trk_fbc", Q: "trk_event_queue"
   };
 
-  // --- RESET DIÁRIO E GERAÇÃO IMEDIATA (v4.4) ---
   const todayStr = new Date().toISOString().split('T')[0];
   if (localStorage.getItem("trk_date") !== todayStr) {
     Object.keys(localStorage).forEach(k => {
@@ -342,28 +341,6 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     }
   }
 
-  function inject() {
-    const evId = localStorage.getItem("trk_event_id_InitiateCheckout");
-    if (!evId) return;
-    const up = new URLSearchParams(window.location.search);
-    document.querySelectorAll("a[href]").forEach(a => {
-      try {
-        const u = new URL(a.href);
-        const host = u.hostname;
-        const isCheckout = a.dataset.checkout !== undefined || CONFIG.DOMAINS.some(d => host.includes(d));
-        if (isCheckout) {
-          const paramName = host.includes("hotmart.com") ? "sck" : "src";
-          u.searchParams.set(paramName, evId);
-
-          ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(p => {
-            if (up.get(p)) u.searchParams.set(p, up.get(p));
-          });
-          a.href = u.toString();
-        }
-      } catch (e) {}
-    });
-  }
-
   async function fireCheckout(a) {
     const evId = createEventId("InitiateCheckout");
     localStorage.setItem("trk_event_id_InitiateCheckout", evId);
@@ -389,6 +366,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     } catch (e) {
       console.warn("[checkout] Erro ao registrar clique:", e);
     }
+    return evId;
   }
 
   document.addEventListener("click", async (e) => {
@@ -401,9 +379,19 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     e.preventDefault();
 
     try {
-      await fireCheckout(a);
-      inject();
-      window.location.href = a.href;
+      const checkoutId = await fireCheckout(a);
+      
+      const u = new URL(a.href, window.location.href);
+      const host = u.hostname || window.location.hostname;
+      const paramName = host.includes("hotmart.com") ? "sck" : "src";
+      u.searchParams.set(paramName, checkoutId);
+      
+      const up = new URLSearchParams(window.location.search);
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(p => {
+        if (up.get(p)) u.searchParams.set(p, up.get(p));
+      });
+
+      window.location.href = u.toString();
     } catch (err) {
       console.error("[checkout] erro ao preparar redirecionamento:", err);
       window.location.href = a.href;
@@ -413,7 +401,6 @@ fbq('set', 'autoConfig', false, '1816037512405504');
   const init = async () => { 
     await track("PageView"); 
     setTimeout(() => track("ViewContent"), 400); 
-    inject(); 
     Queue.process(); 
   };
   
@@ -424,18 +411,16 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     return function() {
       const res = orig.apply(this, arguments);
       track("PageView");
-      inject();
       return res;
     };
   };
   history.pushState = wrap("pushState");
   history.replaceState = wrap("replaceState");
-  window.addEventListener("popstate", () => { track("PageView"); inject(); });
+  window.addEventListener("popstate", () => { track("PageView"); });
   window.addEventListener("online", () => Queue.process());
 
 })();
 </script>
-
 
 </body>
 
