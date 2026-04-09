@@ -191,7 +191,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     </div>
   </section>
 
-  <!-- Tracking Ultra Blindado v4.0 (Elite Edition) -->
+ <!-- Tracking Ultra Blindado v4.0 (Elite Edition) -->
 <script>
 (function () {
   if (window.__TRK_LOADED__) return;
@@ -235,6 +235,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
   };
 
   const genId = (p) => p + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
+  const createEventId = (name) => name + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
   const getC = (n) => { const m = document.cookie.match(new RegExp("(^| )" + n + "=([^;]+)")); return m ? m[2] : null; };
   const setC = (n, v) => {
     const s = window.location.protocol === "https:";
@@ -276,15 +277,8 @@ fbq('set', 'autoConfig', false, '1816037512405504');
       if (window.fbq) fbq("set", "autoConfig", false, "1816037512405504"); 
     }
 
-    const pageKey = "trk_ev_" + btoa(window.location.href).substring(0, 16);
-    let evId = sessionStorage.getItem(pageKey);
-    
-    if (!evId) {
-       evId = genId("evt");
-       sessionStorage.setItem(pageKey, evId);
-    }
-
-    localStorage.setItem(KEY.EID, evId);
+    const evId = createEventId(eventName);
+    localStorage.setItem("trk_event_id_" + eventName, evId);
     
     let sessId = localStorage.getItem(KEY.SID);
     if (!sessId) {
@@ -317,7 +311,8 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     if (window.fbq) {
       const fbOpts = { eventID: evId };
       if (eventName === "PageView") fbq("track", "PageView", {}, fbOpts);
-      else fbq("track", "ViewContent", { content_name: document.title }, fbOpts);
+      else if (eventName === "ViewContent") fbq("track", "ViewContent", { content_name: document.title }, fbOpts);
+      else fbq("track", eventName, { content_name: document.title }, fbOpts);
     }
 
     try {
@@ -332,14 +327,15 @@ fbq('set', 'autoConfig', false, '1816037512405504');
   }
 
   function inject() {
-    const evId = localStorage.getItem(KEY.EID);
+    const evId = localStorage.getItem("trk_event_id_InitiateCheckout");
     if (!evId) return;
     const up = new URLSearchParams(window.location.search);
     document.querySelectorAll("a[href]").forEach(a => {
       try {
         const u = new URL(a.href);
         const host = u.hostname;
-        if (CONFIG.DOMAINS.some(d => host.includes(d))) {
+        const isCheckout = a.dataset.checkout !== undefined || CONFIG.DOMAINS.some(d => host.includes(d));
+        if (isCheckout) {
           const paramName = host.includes("hotmart.com") ? "sck" : "src";
           u.searchParams.set(paramName, evId);
 
@@ -353,11 +349,12 @@ fbq('set', 'autoConfig', false, '1816037512405504');
   }
 
   async function fireCheckout(a) {
-    const evId = localStorage.getItem(KEY.EID);
-    if (!evId) return;
+    const evId = createEventId("InitiateCheckout");
+    localStorage.setItem("trk_event_id_InitiateCheckout", evId);
     if (window.fbq) fbq("track", "InitiateCheckout", { content_name: document.title }, { eventID: evId });
     
     const payload = JSON.stringify({ 
+      event_name: "InitiateCheckout",
       event_id: evId, 
       checkout_provider: "generic",
       checkout_url: a.href, 
@@ -379,10 +376,10 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     obs.observe(document.body, { childList: true, subtree: true });
   }
 
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
     const a = e.target.closest("a[href]");
-    if (a && CONFIG.DOMAINS.some(d => a.href.includes(d))) {
-      fireCheckout(a);
+    if (a && (a.dataset.checkout !== undefined || CONFIG.DOMAINS.some(d => a.href.includes(d)))) {
+      await fireCheckout(a);
       inject();
     }
   });
