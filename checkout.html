@@ -136,101 +136,86 @@
   </div>
 
   <script>
-  (function () {
-    const API_URL = "https://api-trackeamento.onrender.com";
-    const TEST_EVENT_CODE = "TEST30209";
+    (function () {
+      const API_URL = "https://api-trackeamento.onrender.com";
 
-    function getSourceEventId() {
-      const params = new URLSearchParams(window.location.search);
-
-      return (
-        params.get("src") ||
-        params.get("sck") ||
-        localStorage.getItem("trk_event_id_InitiateCheckout") ||
-        null
-      );
-    }
-
-    function randomTransactionId() {
-      return "txn_" + Date.now();
-    }
-
-    function setStatus(msg, isError = false) {
-      const box = document.getElementById("statusBox");
-      box.style.color = isError ? "#fca5a5" : "#86efac";
-      box.textContent = msg;
-    }
-
-    function renderDebug() {
-      const params = new URLSearchParams(window.location.search);
-      const sourceEventId = getSourceEventId();
-
-      document.getElementById("debugBox").innerHTML = `
-        <strong>source_event_id:</strong> ${sourceEventId || "-"}<br>
-        <strong>provider:</strong> fake_checkout<br>
-        <strong>transaction_id:</strong> gerado no clique<br>
-        <strong>src URL:</strong> ${params.get("src") || "-"}<br>
-        <strong>sck URL:</strong> ${params.get("sck") || "-"}<br>
-        <strong>storage:</strong> ${localStorage.getItem("trk_event_id_InitiateCheckout") || "-"}
-      `;
-    }
-
-    async function sendWebhookPurchase() {
-      const source_event_id = getSourceEventId();
-
-      if (!source_event_id) {
-        setStatus("source_event_id não encontrado. Volte para a página inicial e clique novamente no checkout.", true);
-        return;
+      function getEventId() {
+        return localStorage.getItem("trk_event_id");
       }
 
-      const payload = {
-        provider: "fake_checkout",
-        source_event_id,
-        transaction_id: randomTransactionId(),
-        status: "approved",
-        value: 29.90,
-        currency: "BRL",
-        buyer_name: "Cliente Teste",
-        buyer_email: "teste@email.com",
-        buyer_phone: "11999999999",
-        product_id: "produto_teste",
-        product_name: "Produto Teste",
-        offer_id: "oferta_teste",
-        offer_name: "Oferta Principal",
-        buyer_country: "BR",
-        buyer_state: "RJ",
-        buyer_city: "Barra Mansa",
-        is_test: true,
-        test_event_code: TEST_EVENT_CODE
-      };
+      function randomTransactionId() {
+        return "txn_" + Date.now();
+      }
 
-      try {
-        const res = await fetch(API_URL + "/webhook", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
+      function setStatus(msg, isError = false) {
+        const box = document.getElementById("statusBox");
+        box.style.color = isError ? "#fca5a5" : "#86efac";
+        box.textContent = msg;
+      }
 
-        const data = await res.json();
-        console.log("[webhook] resposta", data);
+      function renderDebug() {
+        const eventId = getEventId();
+        document.getElementById("debugBox").innerHTML = `
+          <strong>event_id:</strong> ${eventId || "-"}<br>
+          <strong>provider:</strong> fake_checkout<br>
+          <strong>transaction_id:</strong> gerado no clique
+        `;
+      }
 
-        if (!res.ok) {
-          throw new Error(data.error || "Erro ao finalizar compra");
+      async function sendWebhookPurchase() {
+        const event_id = getEventId();
+
+        if (!event_id) {
+          setStatus("event_id não encontrado. Volte para a página inicial.", true);
+          return;
         }
 
-        setStatus("Compra simulada com sucesso. Webhook enviado.");
-      } catch (err) {
-        console.error("[webhook] erro", err);
-        setStatus("Erro ao enviar webhook de compra.", true);
+        const payload = {
+          provider: "fake_checkout",
+          event_id,
+          transaction_id: randomTransactionId(),
+          status: "approved",
+          value: 29.90,
+          currency: "BRL",
+          buyer_name: "Cliente Teste",
+          buyer_email: "teste@email.com",
+          buyer_phone: "11999999999",
+          product_id: "produto_teste",
+          product_name: "Produto Teste",
+          offer_id: "oferta_teste",
+          offer_name: "Oferta Principal",
+          buyer_country: "BR",
+          buyer_state: "RJ",
+          buyer_city: "Barra Mansa"
+        };
+
+        try {
+          const res = await fetch(API_URL + "/webhook", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+          console.log("[webhook] resposta", data);
+
+          if (!res.ok) {
+            throw new Error(data.error || "Erro ao finalizar compra");
+          }
+
+          setStatus("Compra simulada com sucesso. Webhook enviado.");
+        } catch (err) {
+          console.error("[webhook] erro", err);
+          setStatus("Erro ao enviar webhook de compra.", true);
+        }
       }
-    }
 
-    document.getElementById("btnFinalizar").addEventListener("click", sendWebhookPurchase);
+      document.getElementById("btnFinalizar").addEventListener("click", sendWebhookPurchase);
 
-    renderDebug();
-  })();
-</script>
+      renderDebug();
+    })();
+  </script>
 </body>
 </html>

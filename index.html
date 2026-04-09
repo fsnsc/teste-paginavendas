@@ -191,11 +191,13 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     </div>
   </section>
 
- <!-- Tracking Ultra Blindado v4.0 (Elite Edition) -->
+<!-- Tracking Ultra Blindado v4.4 (Anti-Duplicidade) -->
 <script>
 (function () {
   if (window.__TRK_LOADED__) return;
   window.__TRK_LOADED__ = true;
+
+  const TRK_SENT = {}; // Trava de memória por execução
 
   const CONFIG = {
     API_URL: "https://api-trackeamento.onrender.com",
@@ -205,12 +207,26 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     RETRY_BATCH: 5
   };
 
-  const CACHE = {}; // Trava de duplicidade
-
   const KEY = {
     EID: "trk_event_id", SID: "trk_session_id", FT: "trk_first_touch", LT: "trk_last_touch",
     PTRK: "trk_page_tracked", FID: "trk_fbclid", FBC: "trk_fbc", Q: "trk_event_queue"
   };
+
+  // --- RESET DIÁRIO E GERAÇÃO IMEDIATA (v4.4) ---
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (localStorage.getItem("trk_date") !== todayStr) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith("trk_event_id_")) localStorage.removeItem(k);
+    });
+    localStorage.setItem("trk_date", todayStr);
+  }
+
+  const genId = (p) => p + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
+  const createEventId = (name) => name + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
+  
+  if (!localStorage.getItem("trk_event_id_PageView")) {
+    localStorage.setItem("trk_event_id_PageView", createEventId("PageView"));
+  }
 
   const Queue = {
     get() { try { return JSON.parse(localStorage.getItem(KEY.Q) || "[]"); } catch(e){ return []; } },
@@ -234,8 +250,6 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     }
   };
 
-  const genId = (p) => p + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
-  const createEventId = (name) => name + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
   const getC = (n) => { const m = document.cookie.match(new RegExp("(^| )" + n + "=([^;]+)")); return m ? m[2] : null; };
   const setC = (n, v) => {
     const s = window.location.protocol === "https:";
@@ -266,10 +280,9 @@ fbq('set', 'autoConfig', false, '1816037512405504');
   };
 
   async function track(eventName) {
-    const now = Date.now();
-    const cacheKey = eventName + ":" + window.location.href;
-    if (CACHE[cacheKey] && now - CACHE[cacheKey] < 1000) return;
-    CACHE[cacheKey] = now;
+    const trackKey = (eventName === "PageView") ? "pv:" + window.location.href : null;
+    if (trackKey && TRK_SENT[trackKey]) return;
+    if (trackKey) TRK_SENT[trackKey] = true;
 
     if (CONFIG.PAGE_TRACKED === window.location.href && eventName === "PageView") return;
     if (eventName === "PageView") {
@@ -277,7 +290,10 @@ fbq('set', 'autoConfig', false, '1816037512405504');
       if (window.fbq) fbq("set", "autoConfig", false, "1816037512405504"); 
     }
 
-    const evId = createEventId(eventName);
+    const evId = (eventName === "PageView") 
+      ? localStorage.getItem("trk_event_id_PageView") 
+      : createEventId(eventName);
+      
     localStorage.setItem("trk_event_id_" + eventName, evId);
     
     let sessId = localStorage.getItem(KEY.SID);
@@ -356,24 +372,23 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     const payload = JSON.stringify({ 
       event_name: "InitiateCheckout",
       event_id: evId, 
+      source_event_id: localStorage.getItem("trk_event_id_PageView"),
       checkout_provider: "generic",
       checkout_url: a.href, 
       test_event_code: CONFIG.TEST_CODE || null,
       ts: Date.now() 
     });
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(CONFIG.API_URL + "/checkout", payload);
-    } else {
-      fetch(CONFIG.API_URL + "/checkout", { method: "POST", body: payload, keepalive: true }).catch(() => {});
-    }
-  }
 
-  const debouncedInject = (() => {
-    let t; return () => { clearTimeout(t); t = setTimeout(inject, 500); };
-  })();
-  const obs = new MutationObserver(debouncedInject);
-  if (document.body) {
-    obs.observe(document.body, { childList: true, subtree: true });
+    try {
+      await fetch(CONFIG.API_URL + "/checkout", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
+        body: payload, 
+        keepalive: true 
+      });
+    } catch (e) {
+      console.warn("[checkout] Erro ao registrar clique:", e);
+    }
   }
 
   document.addEventListener("click", async (e) => {
@@ -395,20 +410,14 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     }
   });
 
-  let initialized = false;
   const init = async () => { 
-    if (initialized) return;
-    initialized = true;
-
     await track("PageView"); 
     setTimeout(() => track("ViewContent"), 400); 
-    
     inject(); 
     Queue.process(); 
   };
   
-  if (document.readyState === "complete") init();
-  else window.addEventListener("load", init);
+  init();
 
   const wrap = (type) => {
     const orig = history[type];
@@ -426,6 +435,8 @@ fbq('set', 'autoConfig', false, '1816037512405504');
 
 })();
 </script>
+
+
 </body>
 
 </html>
