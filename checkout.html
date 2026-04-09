@@ -171,6 +171,39 @@
         return match ? match[2] : null;
       }
 
+      function setCookie(name, value) {
+        const secure = window.location.protocol === "https:";
+        document.cookie = name + "=" + value + "; path=/; max-age=7776000; SameSite=Lax" + (secure ? "; Secure" : "");
+      }
+
+      function buildFbc(fbclid, existingFbc) {
+        if (!fbclid) return existingFbc || null;
+        if (existingFbc) {
+          const parts = String(existingFbc).split(".");
+          if (parts.length >= 4 && parts.slice(3).join(".") === fbclid) return existingFbc;
+        }
+        return "fb.1." + Date.now() + "." + fbclid;
+      }
+
+      function getMetaClickData() {
+        const fbclid = getQueryParam("fbclid") || localStorage.getItem("trk_fbclid") || null;
+        const urlFbc = getQueryParam("fbc") || null;
+        const cookieFbc = getCookie("_fbc") || localStorage.getItem("trk_fbc") || null;
+        let fbp = getCookie("_fbp") || localStorage.getItem("trk_fbp") || null;
+        if (!fbp) {
+          fbp = "fb.1." + Date.now() + "." + Math.floor(Math.random() * 1e10);
+        }
+        const fbc = urlFbc || buildFbc(fbclid, cookieFbc);
+        localStorage.setItem("trk_fbp", fbp);
+        setCookie("_fbp", fbp);
+        if (fbclid) localStorage.setItem("trk_fbclid", fbclid);
+        if (fbc) {
+          localStorage.setItem("trk_fbc", fbc);
+          setCookie("_fbc", fbc);
+        }
+        return { fbclid, fbp, fbc };
+      }
+
       function createEventId(prefix) {
         return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
       }
@@ -207,20 +240,20 @@
       }
 
       async function sendTrackEvent(eventName, eventId, customData) {
+        const metaClick = getMetaClickData();
         const payload = {
           event_name: eventName,
           event_id: eventId,
           session_id: localStorage.getItem(KEY.SESSION_ID) || null,
-          fbp: getCookie("_fbp") || null,
-          fbc: getCookie("_fbc") || null,
+          fbclid: metaClick.fbclid,
+          fbp: metaClick.fbp,
+          fbc: metaClick.fbc,
           page_url: window.location.href,
           referrer: document.referrer || null,
           user_agent: navigator.userAgent,
           screen: window.screen.width + "x" + window.screen.height,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           page_url: window.location.href,
-          fbp: getCookie("_fbp") || null,
-          fbc: getCookie("_fbc") || null,
           test_event_code: TEST_EVENT_CODE,
           ...customData
         };
@@ -274,6 +307,7 @@
 
         const transaction_id = randomTransactionId();
         const purchase_event_id = "Purchase_" + transaction_id;
+        const metaClick = getMetaClickData();
         const payload = {
           provider: "fake_checkout",
           source_event_id: source_event_id || null,
@@ -286,7 +320,6 @@
           buyer_name: "Cliente Teste",
           buyer_email: "teste@email.com",
           buyer_phone: "11999999999",
-          product_id: "produto_teste",
           product_name: "Produto Teste",
           product_id: "produto_teste_01",
           offer_id: "oferta_teste",
@@ -295,8 +328,9 @@
           buyer_state: "RJ",
           buyer_city: "Barra Mansa",
           page_url: window.location.href,
-          fbp: getCookie("_fbp") || null,
-          fbc: getCookie("_fbc") || null,
+          fbclid: metaClick.fbclid,
+          fbp: metaClick.fbp,
+          fbc: metaClick.fbc,
           is_test: true,
           test_event_code: TEST_EVENT_CODE
         };

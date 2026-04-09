@@ -256,6 +256,32 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     const s = window.location.protocol === "https:";
     document.cookie = n + "=" + v + "; path=/; max-age=7776000; SameSite=Lax" + (s ? "; Secure" : "");
   };
+  const buildFbc = (fbclid, existingFbc) => {
+    if (!fbclid) return existingFbc || null;
+    if (existingFbc) {
+      const parts = String(existingFbc).split('.');
+      if (parts.length >= 4 && parts.slice(3).join('.') === fbclid) return existingFbc;
+    }
+    return "fb.1." + Date.now() + "." + fbclid;
+  };
+  const getMetaClickData = () => {
+    const up = new URLSearchParams(window.location.search);
+    const fbclid = up.get("fbclid") || localStorage.getItem(KEY.FID) || null;
+    const existingFbc = getC("_fbc") || localStorage.getItem(KEY.FBC) || null;
+    let fbp = getC("_fbp") || localStorage.getItem("trk_fbp") || null;
+    if (!fbp) {
+      fbp = "fb.1." + Date.now() + "." + Math.floor(Math.random() * 1e10);
+    }
+    const fbc = buildFbc(fbclid, existingFbc);
+    localStorage.setItem("trk_fbp", fbp);
+    setC("_fbp", fbp);
+    if (fbclid) localStorage.setItem(KEY.FID, fbclid);
+    if (fbc) {
+      localStorage.setItem(KEY.FBC, fbc);
+      setC("_fbc", fbc);
+    }
+    return { fbclid, fbp, fbc };
+  };
 
   const getDeviceInfo = () => {
     const ua = navigator.userAgent;
@@ -305,11 +331,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     }
 
     const up = new URLSearchParams(window.location.search);
-    const fbclid = up.get("fbclid") || localStorage.getItem(KEY.FID);
-    let fbp = getC("_fbp");
-    if (!fbp) { fbp = "fb.1." + Date.now() + "." + Math.floor(Math.random() * 1e10); setC("_fbp", fbp); }
-    let fbc = fbclid ? "fb.1." + Date.now() + "." + fbclid : getC("_fbc");
-    if (fbclid) { localStorage.setItem(KEY.FID, fbclid); setC("_fbc", fbc); }
+    const { fbclid, fbp, fbc } = getMetaClickData();
 
     const info = getDeviceInfo();
     const t = captureTouch();
@@ -348,9 +370,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     const evId = createEventId("InitiateCheckout");
     const sourceEventId = localStorage.getItem("trk_event_id_PageView");
     const up = new URLSearchParams(window.location.search);
-    const fbclid = up.get("fbclid") || localStorage.getItem(KEY.FID) || null;
-    const fbp = getC("_fbp") || null;
-    const fbc = getC("_fbc") || null;
+    const { fbclid, fbp, fbc } = getMetaClickData();
 
     localStorage.setItem("trk_event_id_InitiateCheckout", evId);
     localStorage.setItem(KEY.EID, evId);
