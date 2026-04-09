@@ -155,16 +155,20 @@
     (function () {
       const API_URL = "https://api-trackeamento.onrender.com";
       const TEST_EVENT_CODE = "TEST10962";
+<<<<<<< HEAD
       const KEY = {
         SESSION_ID: "trk_session_id",
         LAST_PURCHASE_EVENT_ID: "trk_last_purchase_event_id"
       };
+=======
+>>>>>>> 5bf18aab0b22a6d545803cdea4de08be3c350b3c
 
       function getQueryParam(name) {
         const url = new URL(window.location.href);
         return url.searchParams.get(name);
       }
 
+<<<<<<< HEAD
       function getCookie(name) {
         const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
         return match ? match[2] : null;
@@ -180,6 +184,14 @@
 
       function getCheckoutEventId() {
         return getQueryParam("checkout_event_id") || getQueryParam("src") || getQueryParam("sck") || localStorage.getItem("trk_last_checkout_event_id") || localStorage.getItem("trk_event_id_InitiateCheckout") || null;
+=======
+      function getSourceEventId() {
+        return getQueryParam("source_event_id") || getQueryParam("src") || getQueryParam("sck") || localStorage.getItem("trk_last_source_event_id") || localStorage.getItem("trk_event_id_PageView") || null;
+      }
+
+      function getCheckoutEventId() {
+        return getQueryParam("checkout_event_id") || localStorage.getItem("trk_last_checkout_event_id") || localStorage.getItem("trk_event_id_InitiateCheckout") || null;
+>>>>>>> 5bf18aab0b22a6d545803cdea4de08be3c350b3c
       }
 
       function randomTransactionId() {
@@ -192,18 +204,26 @@
         box.textContent = msg;
       }
 
+<<<<<<< HEAD
       function renderDebug(extra = {}) {
+=======
+      function renderDebug() {
+>>>>>>> 5bf18aab0b22a6d545803cdea4de08be3c350b3c
         const sourceEventId = getSourceEventId();
         const checkoutEventId = getCheckoutEventId();
         document.getElementById("debugBox").innerHTML = `
           <strong>source_event_id:</strong> ${sourceEventId || "-"}<br>
           <strong>checkout_event_id:</strong> ${checkoutEventId || "-"}<br>
+<<<<<<< HEAD
           <strong>purchase_event_id:</strong> ${extra.purchaseEventId || localStorage.getItem(KEY.LAST_PURCHASE_EVENT_ID) || "-"}<br>
+=======
+>>>>>>> 5bf18aab0b22a6d545803cdea4de08be3c350b3c
           <strong>provider:</strong> fake_checkout<br>
           <strong>transaction_id:</strong> ${extra.transactionId || "gerado no clique"}
         `;
       }
 
+<<<<<<< HEAD
       async function sendTrackEvent(eventName, eventId, customData) {
         const payload = {
           event_name: eventName,
@@ -251,6 +271,14 @@
 
         if (!source_event_id && !checkout_event_id) {
           setStatus("IDs de origem não encontrados. Volte para a página inicial e refaça o fluxo.", true);
+=======
+      async function sendWebhookPurchase() {
+        const source_event_id = getSourceEventId();
+        const checkout_event_id = getCheckoutEventId();
+
+        if (!source_event_id) {
+          setStatus("source_event_id não encontrado. Volte para a página inicial e refaça o fluxo.", true);
+>>>>>>> 5bf18aab0b22a6d545803cdea4de08be3c350b3c
           return;
         }
 
@@ -258,10 +286,16 @@
         const purchase_event_id = "Purchase_" + transaction_id;
         const payload = {
           provider: "fake_checkout",
+<<<<<<< HEAD
           source_event_id: source_event_id || null,
           checkout_event_id: checkout_event_id || null,
           purchase_event_id,
           transaction_id,
+=======
+          source_event_id,
+          checkout_event_id,
+          transaction_id: randomTransactionId(),
+>>>>>>> 5bf18aab0b22a6d545803cdea4de08be3c350b3c
           status: "approved",
           value: 29.90,
           currency: "BRL",
@@ -314,7 +348,16 @@
 
       document.getElementById("btnFinalizar").addEventListener("click", sendWebhookPurchase);
 
+<<<<<<< HEAD
       registerCheckoutLanding();
+=======
+      if (window.fbq) {
+        const checkoutPageEventId = "CheckoutPageView_" + Date.now();
+        fbq("track", "PageView", {}, { eventID: checkoutPageEventId });
+        fbq("track", "ViewContent", { content_name: document.title }, { eventID: "CheckoutViewContent_" + Date.now() });
+      }
+
+>>>>>>> 5bf18aab0b22a6d545803cdea4de08be3c350b3c
       renderDebug();
     })();
   </script>
