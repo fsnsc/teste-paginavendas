@@ -378,9 +378,20 @@ fbq('set', 'autoConfig', false, '1816037512405504');
 
   document.addEventListener("click", async (e) => {
     const a = e.target.closest("a[href]");
-    if (a && (a.dataset.checkout !== undefined || CONFIG.DOMAINS.some(d => a.href.includes(d)))) {
+    if (!a) return;
+
+    const isCheckout = a.dataset.checkout !== undefined || CONFIG.DOMAINS.some(d => a.href.includes(d));
+    if (!isCheckout) return;
+
+    e.preventDefault();
+
+    try {
       await fireCheckout(a);
       inject();
+      window.location.href = a.href;
+    } catch (err) {
+      console.error("[checkout] erro ao preparar redirecionamento:", err);
+      window.location.href = a.href;
     }
   });
 
