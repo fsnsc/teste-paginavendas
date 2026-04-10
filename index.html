@@ -177,7 +177,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
 
       <div class="price">R$ 29,90 <span>pagamento único</span></div>
 
-      <a href="https://pay.lowify.com.br/checkout?product_id=efYbBj" class="btn" data-checkout data-name="Produto Teste" data-price="1.00">
+      <a href="checkout.html" class="btn" data-checkout data-name="Produto Teste" data-price="1.00">
         Ir para o Checkout
       </a>
 
@@ -191,7 +191,7 @@ fbq('set', 'autoConfig', false, '1816037512405504');
     </div>
   </section>
 
-<!-- Tracking Ultra-Blindagem v5.1 (Recuperação Total) -->
+  <!-- Tracking Ultra-Blindagem v5.1 (Recuperação Total) -->
 <script>
 (function () {
   if (window.__TRK_LOADED__) return;
@@ -201,8 +201,18 @@ fbq('set', 'autoConfig', false, '1816037512405504');
 
   const CONFIG = {
     API_URL: "https://api-trackeamento.onrender.com",
-    DOMAINS: ["kiwify.com.br", "hotmart.com", "wiapy.com", "lowify.io", "ggcheckout.com", "netlify.app", "localhost"],
-    TEST_CODE: "TEST10962",
+    DOMAINS: [
+      "kiwify.com.br",
+      "hotmart.com",
+      "wiapy.com",
+      "lowify.io",
+      "lowify.com.br",
+      "pay.lowify.com.br",
+      "ggcheckout.com",
+      "netlify.app",
+      "localhost"
+    ],
+    TEST_CODE: "TEST16723",
     QUEUE_LIMIT: 50,
     RETRY_BATCH: 5
   };
@@ -475,7 +485,6 @@ fbq('set', 'autoConfig', false, '1816037512405504');
 
 })();
 </script>
-
 </body>
 
 </html>
